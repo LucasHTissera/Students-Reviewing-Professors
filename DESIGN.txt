@@ -1,0 +1,121 @@
+By Lucas Hernan Tissera
+
+Video overview: <https://youtu.be/EMuE_OxWCXU>
+
+## Scope
+
+In this section you should answer the following questions:
+
+* What is the purpose of your database?
+
+It's primary purpose is to collect, store and display the reviews students left about their teachers/subjects.
+
+* Which people, places, things, etc. are you including in the scope of your database?
+
+I´m including professors (which is divided into lecturers and practice teachers), students, courses, subjects and reviews. It´s limited (although it can be adapted) to a single institution.
+
+* Which people, places, things, etc. are *outside* the scope of your database?
+
+I´m excluding the posibility of multiple institutions (which would allow for a national database for example).
+
+## Functional Requirements
+
+In this section you should answer the following questions:
+
+* What should a user be able to do with your database?
+
+Depends on the user. This database was written in PostgreSQL in order to have different users allowed to different tables:
+
+Professors: Can access the view "past_reviews" in order to see their and their colleges past reviews. He can also access "students_class" to see who will attend their class this semester.
+
+Students: Can access the view "classes/subjects/professors" to see the distribution of classes, subjects and professors in order to enroll next semester. They can also access "past_reviews" in order to see each professors past reviews. At the end of the semester, students will get access to the table reviews to review (once) the professors of the classes they are enrolled in.
+
+* What's beyond the scope of what a user should be able to do with your database?
+
+Professors cannot review professors. Also moderation of reviews is left for the Admin to handle.
+This database is designed to encompass a single college or university, but it could be adapted to include multiple institutions if needed.
+Also, students/professors are not able to change any of their personal information. It would have to be loaded by an admin.
+
+## Representation
+
+### Entities
+
+In this section you should answer the following questions:
+
+* Which entities will you choose to represent in your database?
+Students, Professors, Classes and Subjects.
+
+* What attributes will those entities have?
+Students:
+ID - First and last name - User name and passoword - Enrollment Date - Graduation Date - Graduated
+
+Professors:
+ID - First and last name - User name and passoword - Employment Date - Employment Termination Date - Employed
+
+Classes:
+ID - Name - Classroom Number - Starting Date - End Date
+
+Subjects:
+ID - Name - Brief Description - Being Taught
+
+* Why did you choose the types you did?
+The SERIAL where chosen to have big integer number representing the IDs.
+The VARCHAR(60) and VARCHAR(40) distinction was made because I believe First and Last name usually are longer than usernames and passowords.
+DATE was chosen because the hour in which someone enrolled/was employed is irrelevant. Also to easily filter current classes from ones from past semesters.
+SMALLINT for classroom number is because classroom number are usually 3/4 digits long.
+The BOOLEANs were added to have an easy way to sort who graduated/who is currently employed/which subjects are being taught.
+
+* Why did you choose the constraints you did?
+PRIMARY KEYS are needed in every entity, so I assigned it to an ID with SERIAL (meaning ID don't repeat).
+NOT NULLs were applied because these attributes are essential for the row to be meaningful.
+UNIQUEs were because two Usernames cannot be the same.
+
+### Relationships
+
+In this section you should include your entity relationship diagram and describe the relationships between the entities in your database.
+
+I should make a file, save it in the project folder and embed the image using:
+![Entity Relationship Diagram](Entity_Relationship_Diagram.jpg)
+
+Students-Classes:
+Students attend one or multiple (one minimum) Classes and Classes can be attended by one or multiple (one minimum) Students.
+In SQL, this relationship is called attending_class. It has a FOREIGN KEY to classes(id) and to students(id).
+
+Subjects-Classes:
+Subjects are the content of one or multiple (one minimum) Classes and Classes are about by one (and only one) Subject.
+In SQL, this relationship is called class_subject. It has a FOREIGN KEY to classes(id) and to subjects(id).
+
+Professors-Classes:
+Professors teach one or multiple (one minimum) Classes and Classes get taught by one or multiple (one minimum) Professors.
+In SQL, this relationship is called teaching_class. It has a FOREIGN KEY to classes(id) and to professors(id).
+
+Students-Professors:
+Students review zero or multiple (zero minimum) Professors and Professors can be reviewed by zero or multiple (zero minimum) Students. (In the video I made explaining this part, I made a mistake. In the video, I said that Professors can't review Students, which is still true. But the relation between Professor and Student should be the explained just now. Forgive me for my confusion.)
+In SQL, this relationship is called reviews. It has a FOREIGN KEY to students(id) and 4 to professors(id) (1 for the lecturer and 3 to the practice teachers). There has to be a minimum of one practice teacher and one lecturer per class. It also has one for class(id). 
+Additionally, it stores Opinion of the class, Opinion of the lecturer, Opinion of the practice teachers and Usefulness of the class with a TYPE I created called rating (that goes from 1 to 5). And they are NOT NULL so students don't leave those atributes empty. Finally I allows students to add comments with a VARCHAR(500) (It can be adjusted if it's too big)
+
+
+## Optimizations
+
+In this section you should answer the following questions:
+
+* Which optimizations (e.g., indexes, views) did you create? Why?
+I created classes_professors_subjects, past_reviews, students_class as Views in order to utilize the data already available to create this tables but not utilizing more space. students_class was created in order for professors to know before/during the semester which students are enrolled in their class.
+classes_professors_subjects was made for the students in order to easily visualize the classes available at the beginning of the semester and which professor to enroll with.
+past_reviews was made for students to check past reviews of professors to check what other students think of them. Professors can also check this.
+I also added procedures to easily add and remove students and professors. It doesn't eliminate them from the database, it only revokes their access to it. This is to prevent data loss.
+Finally the FUNCTIONs check_student_in_class and check_professor_in_class were created in conjunction with the TRIGGER new_review in order to only allow students enrolled in a class to review professors who are also in that class.
+
+## Limitations
+
+In this section you should answer the following questions:
+
+* What are the limitations of your design?
+
+To leave a review, students have to know their professors id.
+Moderation of the reviews comments have to be manually moderated by the admin.
+In the reviews, if there's more than one practice teacher but a review doesn't add it, it doesn't appear in the review. It could be fixed by adding a check that all the practice teachers present in the class are added in the review.
+
+* What might your database not be able to represent very well?
+
+Students can enroll in any class, regardless of their major or previous classes. There should be a check to verify if they meet the necessary prerequisites for enrollment.
